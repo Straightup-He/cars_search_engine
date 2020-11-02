@@ -1,0 +1,221 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>My ES</title>
+    <link href="{% static 'bootstrap-3.3.7-dist/css/bootstrap.min.css' %}" rel="stylesheet">
+    <style>
+        .suggest {
+            position: absolute;
+            background-color: ghostwhite;
+            width: 200px;
+            border-radius: 3px;
+            z-index: 100;
+        "
+        }
+
+        .suggest p:hover {
+            background-color: lightgray;
+            cursor: pointer;
+        }
+    </style>
+
+</head>
+<body>
+<!-- 导航条  -->
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                    data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">Brand</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+                <li class="active"><a href="#">Link <span class="sr-only">(current)</span></a></li>
+                <li><a href="#">Link</a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button"
+                       aria-haspopup="true" aria-expanded="false">Dropdown <span class="caret"></span></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="#">Action</a></li>
+                        <li><a href="#">Another action</a></li>
+                        <li><a href="#">Something else here</a></li>
+                        <li role="separator" class="divider"></li>
+                        <li><a href="#">Separated link</a></li>
+                        <li role="separator" class="divider"></li>
+                        <li><a href="#">One more separated link</a></li>
+                    </ul>
+                </li>
+            </ul>
+            <form class="navbar-form navbar-left" style="position: relative">
+                <div class="form-group">
+                    <input type="text" class="form-control" placeholder="奥迪" id="inputMsg" autocomplete="off"
+                           oninput="check_input()">
+                </div>
+                <div id="advice" class="suggest">
+                </div>
+                <button type="button" class="btn btn-default" id="searchMsg">搜索</button>
+            </form>
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="#">Link</a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button"
+                       aria-haspopup="true" aria-expanded="false">Dropdown <span class="caret"></span></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="#">Action</a></li>
+                        <li><a href="#">Another action</a></li>
+                        <li><a href="#">Something else here</a></li>
+                        <li role="separator" class="divider"></li>
+                        <li><a href="#">Separated link</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div><!-- /.navbar-collapse -->
+    </div><!-- /.container-fluid -->
+</nav>
+<!-- 导航条结束 -->
+<div class="container">
+    <div class="row">
+        <!-- 标签分类 -->
+        <div class="col-md-10 col-md-offset-1">
+            <ul class="nav nav-tabs" id="opt">
+                <li role="presentation" class="active"><a href="#" value="all">全部</a></li>
+                <li role="presentation"><a href="#" value="news">新闻</a></li>
+                <li role="presentation"><a href="#" value="advice">导购</a></li>
+                <li role="presentation"><a href="#" value="drive">试驾</a></li>
+            </ul>
+        </div>
+        <!-- 标签分类 -->
+        <!-- 结果条数展示 -->
+        <div id="data_count" class="col-md-10 col-md-offset-1"></div>
+
+        <div class="col-md-10 col-md-offset-1" id="show_news">
+            {% for foo in news_dict %}
+                <a href="{{ foo.title_url }}"><h3>{{ foo.title }}</h3></a>
+                <p>{{ foo.desc }}</p>
+            {% endfor %}
+        </div>
+        <!-- 分页 -->
+        <div class="col-md-10 col-md-offset-1">
+            <nav aria-label="Page navigation">
+                <ul class="pagination">
+                    <!-- 分页组件 -->
+                </ul>
+            </nav>
+        </div>
+
+    </div>
+</div>
+
+</body>
+<!-- js代码 -->
+<script src="{% static 'jquery.js' %}"></script>
+<script>
+    //分页
+    function myPagination() {
+        $('.pagination li a').click(function () {
+            //拿当前页码
+            var current_page = $(this).attr('page');
+            //拿到分类内容
+            var tag_msg = $('#opt [class=active]').find('a').attr('value');
+            if (current_page) {
+                send_req(tag_msg, current_page)
+            } else {
+                alert('不能再翻了!')
+            }
+        })
+    }
+
+    //分类搜索
+    $("#opt").on("click", "li a", function () {
+        //获取点击的分类的值
+        var tag = $(this).attr("value");
+        //console.log(tag);
+        //调整css样式,选中效果
+        $(this).parent().addClass("active");
+        $(this).parent().siblings().removeClass("active");
+        send_req(tag, '1')
+    })
+
+    //给搜索按钮绑定点击事件
+    $("#searchMsg").click(function () {
+        send_req('all', '1')
+        $(".suggest").html("")
+    });
+
+    //---------------以上是搜索 以下是建议------------------
+
+    //绑定建议点击事件
+    $(".suggest").on("click", "p", function () {
+        //获取建议值
+        var advice_msg = $(this).text();
+        //将建议值输送到输入框
+        $("#inputMsg").val(advice_msg);
+        //返回给后端
+        send_req("all", '1');
+        //清空
+        $(".suggest").html("")
+    })
+
+    //建议器 逻辑
+    function check_input() {
+        var input_msg = $("#inputMsg").val();
+        $.ajax({
+            url: {% url 'advice' %},
+            type: "POST",
+            data: {"input_msg": input_msg},
+            success: function (data) {
+                //console.log(2222, data)
+                if (data !== 'error') {
+                    var html = ''
+                    $.each(data['es_advice'], function (index, item) {
+                        html += '<p>' + item + '</p>'
+                    });
+                    $('.suggest').html(html)
+                } else {
+
+                }
+            }
+        })
+    }
+
+    //定义一个函数专门发送请求
+    function send_req(tag, current_page) {
+        var msg = $("#inputMsg").val() ? $("#inputMsg").val() : "奥迪";
+        //console.log(msg);
+        $.ajax({
+            url: {% url 'index' %},
+            type: "POST",
+            data: {'msg': msg, 'tag': tag, 'current_page': current_page},
+            success: function (data) {
+                //分页
+                $(".pagination").html(data['page_msg'])
+                myPagination()
+                //展示查找到的数据条数
+                $("#data_count").html('<p>找到约 <b style="color: red;">' + data['total_count'] + ' </b>条数据</p>');
+                //展示数据
+                var html = ''
+                $.each(data['data_msg'], function (index, item) {
+                    html += `<a href="${item['_source']['title_url']}"><h3>${item['highlight']['title']}</h3></a><p>${item['_source']['desc']}</p><img src="${item['_source']['img_url']}" alt="">`
+                });
+                $('#show_news').html(html)
+            }
+        });
+    }
+
+
+</script>
+
+</html>
